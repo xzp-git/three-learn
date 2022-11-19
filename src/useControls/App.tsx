@@ -33,6 +33,11 @@ function renderBox() {
   // 修改物体的位置
   // cube.position.set(5, 0, 0);
   // cube.position.x = 4;
+  // 缩放
+  // cube.scale.set(1, 2, 3);
+  // 旋转
+  // cube.rotation.set(Math.PI / 4, 0, 0);
+  cube.rotateX(Math.PI / 4);
 
   // 将物体添加到场景
   scene.add(cube);
