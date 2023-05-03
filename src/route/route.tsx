@@ -1,36 +1,20 @@
-import { Navigate, RouteObject, createBrowserRouter } from "react-router-dom";
-import Layout from "../Layout";
-import ReactDev from "@/pages/react-dev";
-// const routeFiles = import.meta.globEager<string, any>(
-//   "/src/pages/**/index.tsx"
-// );
+import { RouteObject } from "react-router-dom";
 
-// console.log(routeFiles, "routeFiles");
+const routeFiles = import.meta.globEager<string, any>("/src/views/*.tsx");
+const routes: RouteObject[] = [];
 
-export const routes: RouteObject[] = [
-  {
-    path: "/",
-    element: <Navigate to="/react-dev" replace={true} />,
-  },
-  {
-    path: "/",
-    element: <Layout />,
-    children: [
-      {
-        path: "/react-dev",
-        element: <ReactDev />,
-      },
-    ],
-  },
-];
+for (const path in routeFiles) {
+  const element = routeFiles[path].default as RouteObject["element"];
 
-// for (const path in routeFiles) {
-//   const element = routeFiles[path].default;
+  routes.push({
+    path: path.replace("/src/views", "").replace(".tsx", ""),
+    element,
+  });
+}
 
-//   routes[0].children?.push({
-//     path: path.replace("/src/pages", "").replace("/index.tsx", ""),
-//     element,
-//   });
-// }
+routes.push({
+  path: "/",
+  element: routes[0].element,
+});
 
-export const router = createBrowserRouter(routes);
+export default routes;

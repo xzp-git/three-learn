@@ -1,8 +1,7 @@
 import { Layout as ALayout, Menu, Space } from "@arco-design/web-react";
-import { Outlet, useNavigate } from "react-router-dom";
-import { IconApps, IconBug } from "@arco-design/web-react/icon";
+import { Route, Routes, useNavigate } from "react-router-dom";
 import threeIco from "@/assets/three_white.ico";
-import { routes } from "@/route/route";
+import routes from "@/route/route";
 const MenuItem = Menu.Item;
 const SubMenu = Menu.SubMenu;
 const Sider = ALayout.Sider;
@@ -37,14 +36,19 @@ const Layout = () => {
             style={{ width: 200, borderRadius: 4 }}
             theme="dark"
           >
-            {routes[1].children?.map((route) => {
+            {routes?.map((route) => {
               //@ts-ignore
               return <MenuItem key={route.path}>{route.path}</MenuItem>;
             })}
           </Menu>
         </Sider>
         <Content>
-          <Outlet />
+          <Routes>
+            {routes?.map(({ path, element: Element }) => {
+              //@ts-ignore
+              return <Route key={path} path={path} element={<Element />} />;
+            })}
+          </Routes>
         </Content>
       </ALayout>
     </ALayout>

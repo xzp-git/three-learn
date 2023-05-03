@@ -1,9 +1,11 @@
 import ReactDOM from "react-dom/client";
-import { RouterProvider } from "react-router-dom";
-import { router } from "./route/route";
+import Layout from "./Layout";
+import { BrowserRouter } from "react-router-dom";
 import "@arco-design/web-react/dist/css/arco.css";
-import "./style/index.less";
+import "./style/base.css";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <RouterProvider router={router} />
+  <BrowserRouter>
+    <Layout />
+  </BrowserRouter>
 );
