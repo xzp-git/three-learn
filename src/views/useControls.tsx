@@ -1,4 +1,3 @@
-import "./App.css";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { useEffect } from "react";
@@ -6,14 +5,10 @@ import { useEffect } from "react";
 function renderBox() {
   // 创建场景
   const scene = new THREE.Scene();
-
+  const width = window.innerWidth - 200;
+  const height = window.innerHeight - 70;
   // 创建相机
-  const camera = new THREE.PerspectiveCamera(
-    75,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    1000
-  );
+  const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
 
   // 设置相机的位置
   camera.position.set(0, 0, 10);
@@ -46,7 +41,7 @@ function renderBox() {
   const renderer = new THREE.WebGLRenderer();
 
   // 设置渲染器的大小
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(width, height);
 
   //将渲染元素插入页面
   document.getElementById("three-app")?.appendChild(renderer.domElement);

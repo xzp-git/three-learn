@@ -1,10 +1,10 @@
-import "./App.css";
 import * as THREE from "three";
 import { useEffect } from "react";
 
 function renderBox() {
   const scene = new THREE.Scene();
-
+  const width = window.innerWidth - 200;
+  const height = window.innerHeight - 70;
   const camera = new THREE.PerspectiveCamera(
     75,
     window.innerWidth / window.innerHeight,
@@ -26,7 +26,7 @@ function renderBox() {
 
   const renderer = new THREE.WebGLRenderer();
 
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(width, height);
 
   document.getElementById("three-app")?.appendChild(renderer.domElement);
 

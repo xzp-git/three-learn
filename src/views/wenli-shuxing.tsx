@@ -1,4 +1,3 @@
-import "./App.css";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { useEffect, useRef } from "react";
@@ -7,14 +6,10 @@ import door from "@/assets/textures/door/color.jpg";
 function renderBox(divRef: HTMLDivElement | null) {
   // 创建场景
   const scene = new THREE.Scene();
-
+  const width = window.innerWidth - 200;
+  const height = window.innerHeight - 70;
   // 创建相机
-  const camera = new THREE.PerspectiveCamera(
-    75,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    1000
-  );
+  const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
 
   // 设置相机的位置
   camera.position.set(0, 0, 10);
@@ -29,6 +24,9 @@ function renderBox(divRef: HTMLDivElement | null) {
     render();
     console.log(texture);
   });
+  // doorTexture.offset.x = 0.5;
+  // doorTexture.offset.y = 0.5;
+  // doorTexture.offset.set(0.5, 0.5);
 
   // 创建几何体
   const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
@@ -45,7 +43,7 @@ function renderBox(divRef: HTMLDivElement | null) {
 
   // 修改物体的位置
   cube.position.x = 4;
-  cube.rotateX(Math.PI / 4);
+  // cube.rotateX(Math.PI / 4);
 
   // 将物体添加到场景
   scene.add(cube);
@@ -54,7 +52,7 @@ function renderBox(divRef: HTMLDivElement | null) {
   const renderer = new THREE.WebGLRenderer();
 
   // 设置渲染器的大小
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(width, height);
 
   //将渲染元素插入页面
   divRef?.appendChild(renderer.domElement);

@@ -1,9 +1,11 @@
-import React from "react";
 import ReactDOM from "react-dom/client";
-// import App from "./createScene/App";
-// import App from "./useControls/App";
-import App from "./mesh/App";
+import Layout from "./Layout";
+import { BrowserRouter } from "react-router-dom";
+import "@arco-design/web-react/dist/css/arco.css";
+import "./style/base.css";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <App />
+  <BrowserRouter>
+    <Layout />
+  </BrowserRouter>
 );
