@@ -14,6 +14,7 @@ interface $Props {
   orbitControls?: OrbitControls;
   stats?: Stats;
   clock?: THREE.Clock;
+  cameraHelper?: THREE.CameraHelper;
   createScene: () => void;
   createCamera: () => void;
   createMesh: () => void;
@@ -43,11 +44,30 @@ const $: $Props = {
     this.clock = clock;
   },
   createCamera() {
-    // 创建相机对象
+    //创建正交相机
+    const size = 4;
+    const orthographicCamera = new THREE.OrthographicCamera(
+      -size,
+      size,
+      size / 2,
+      -size / 2,
+      0.1,
+      3
+    );
+
+    // 设置相机位置
+    orthographicCamera.position.set(2, 2, 3); // 相机默认的坐标是在(0,0,0);
+    // 设置相机方向
+    orthographicCamera.lookAt(this.scene!.position); // 将相机朝向场景
+    // 将相机添加到场景中
+    this.scene!.add(orthographicCamera);
+    this.orthographicCamera = orthographicCamera;
+
+    // 创建相机对象 第二个相机 用来观察 正交相机的视锥体
     const camera = new THREE.PerspectiveCamera(75, this.width! / this.height!); // 透视相机
 
     // 设置相机位置
-    camera.position.set(1, 1, 3); // 相机默认的坐标是在(0,0,0);
+    camera.position.set(2, 2, 6); // 相机默认的坐标是在(0,0,0);
     // 设置相机方向
     camera.lookAt(this.scene!.position); // 将相机朝向场景
     // 将相机添加到场景中
@@ -103,7 +123,9 @@ const $: $Props = {
     //创建辅助网格
     const gridHelper = new THREE.GridHelper();
 
-    this.scene!.add(axesHelper, gridHelper);
+    const cameraHelper = new THREE.CameraHelper(this.orthographicCamera!);
+    this.cameraHelper = cameraHelper;
+    this.scene!.add(axesHelper, gridHelper, cameraHelper);
   },
   controls() {
     // 创建控制器
@@ -127,6 +149,7 @@ const $: $Props = {
     this.mesh!.position.y = Math.sin(elapsedTime);
     this.mesh!.position.x = Math.cos(elapsedTime);
     this.orbitControls!.update();
+    this.cameraHelper!.update();
     this.stats!.update();
     this.renderer!.render(this.scene!, this.camera!);
     requestAnimationFrame(this.animate.bind(this));
