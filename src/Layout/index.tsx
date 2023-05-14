@@ -37,8 +37,18 @@ const Layout = () => {
             theme="dark"
           >
             {routes?.map((route) => {
-              //@ts-ignore
-              return <MenuItem key={route.path}>{route.path}</MenuItem>;
+              if (route.path === "/") {
+                return null;
+              }
+              return (
+                //@ts-ignore
+                <MenuItem key={route.path}>
+                  {
+                    //@ts-ignore
+                    route.element!.displayName as any as string
+                  }
+                </MenuItem>
+              );
             })}
           </Menu>
         </Sider>

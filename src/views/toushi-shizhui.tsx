@@ -2,20 +2,27 @@ import { useEffect } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import Stats from "three/examples/jsm/libs/stats.module";
+import * as dat from "dat.gui";
+
 interface $Props {
   canvas?: HTMLCanvasElement;
   width?: number;
   height?: number;
   camera?: THREE.PerspectiveCamera;
   orthographicCamera?: THREE.OrthographicCamera;
+  perspectiveCamera?: THREE.PerspectiveCamera;
+  perspectiveCamera1?: THREE.PerspectiveCamera;
   scene?: THREE.Scene;
   mesh?: THREE.Mesh;
   renderer?: THREE.WebGLRenderer;
   orbitControls?: OrbitControls;
   stats?: Stats;
   clock?: THREE.Clock;
+  cameraHelper?: THREE.CameraHelper;
+  gui?: dat.GUI;
   createScene: () => void;
   createCamera: () => void;
+  datGui: () => void;
   createMesh: () => void;
   createLight: () => void;
   createRenderer: () => void;
@@ -43,36 +50,92 @@ const $: $Props = {
     this.clock = clock;
   },
   createCamera() {
-    // 创建相机对象
-    const camera = new THREE.PerspectiveCamera(75, this.width! / this.height!); // 透视相机
+    // 创建相机对象 第二个相机 用来观察 正交相机的视锥体
+    const perspectiveCamera1 = new THREE.PerspectiveCamera(
+      75,
+      this.width! / this.height!
+    ); // 透视相机
 
     // 设置相机位置
-    camera.position.set(1, 1, 3); // 相机默认的坐标是在(0,0,0);
+    perspectiveCamera1.position.set(2, 2, 3); // 相机默认的坐标是在(0,0,0);
     // 设置相机方向
-    camera.lookAt(this.scene!.position); // 将相机朝向场景
+    perspectiveCamera1.lookAt(this.scene!.position); // 将相机朝向场景
     // 将相机添加到场景中
-    this.scene!.add(camera);
-    this.camera = camera;
+    this.scene!.add(perspectiveCamera1);
+    this.perspectiveCamera1 = perspectiveCamera1;
+
+    // 创建相机对象 第二个相机 用来观察 正交相机的视锥体
+    const perspectiveCamera = new THREE.PerspectiveCamera(
+      75,
+      this.width! / this.height!
+    ); // 透视相机
+
+    // 设置相机位置
+    perspectiveCamera.position.set(2, 2, 6); // 相机默认的坐标是在(0,0,0);
+    // 设置相机方向
+    perspectiveCamera.lookAt(this.scene!.position); // 将相机朝向场景
+    // 将相机添加到场景中
+    this.scene!.add(perspectiveCamera);
+    this.perspectiveCamera = perspectiveCamera;
+    this.camera = perspectiveCamera;
+  },
+  datGui() {
+    const gui = new dat.GUI();
+    const controls = {
+      wireframe: false,
+      switchCamera: () => {
+        if (this.camera === this.perspectiveCamera1) {
+          this.camera = this.perspectiveCamera;
+          this.orbitControls!.enabled = true;
+        } else {
+          this.camera = this.perspectiveCamera1;
+          this.orbitControls!.enabled = false;
+        }
+      },
+    };
+    gui
+      .add(
+        this.perspectiveCamera1! as THREE.PerspectiveCamera,
+        "fov",
+        40,
+        150,
+        0.1
+      )
+      .name("fov")
+      .onChange((value) => {
+        (this.perspectiveCamera1! as THREE.PerspectiveCamera).fov = value;
+        this.perspectiveCamera1!.updateProjectionMatrix();
+      });
+    gui.add(this.camera!.position, "x", 0.1, 10, 0.1).name("position-x");
+    gui
+      .add(this.camera!, "near", 0.1, 3, 0.1)
+      .name("near")
+      .onChange((value) => {
+        this.camera!.near = value;
+        this.camera!.updateProjectionMatrix();
+      });
+    gui
+      .add(this.camera!, "far", 3, 100, 0.1)
+      .name("far")
+      .onChange((value) => {
+        this.camera!.far = value;
+        this.camera!.updateProjectionMatrix();
+      });
+    gui.add(controls, "wireframe").onChange((value) => {
+      (this.mesh!.material as THREE.MeshLambertMaterial).wireframe = value;
+    });
+    gui.add(controls, "switchCamera");
+    this.gui = gui;
   },
   createMesh() {
     // 创建立方体
     const geometry = new THREE.BoxGeometry(1, 1, 1);
     // 创建立方体的材质
-    // const material = new THREE.MeshLambertMaterial({
-    //   color: 0x1890ff,
-    // });
-
-    const faces = [];
-
-    for (let index = 0; index < geometry.groups.length; index++) {
-      const mesh = new THREE.MeshBasicMaterial({
-        color: 0xffffff * Math.random(),
-      });
-      faces.push(mesh);
-    }
-
+    const material = new THREE.MeshLambertMaterial({
+      color: 0x1890ff,
+    });
     // 创建物体对象
-    const mesh = new THREE.Mesh(geometry, faces);
+    const mesh = new THREE.Mesh(geometry, material);
 
     this.scene!.add(mesh);
     this.mesh = mesh;
@@ -103,7 +166,9 @@ const $: $Props = {
     //创建辅助网格
     const gridHelper = new THREE.GridHelper();
 
-    this.scene!.add(axesHelper, gridHelper);
+    const cameraHelper = new THREE.CameraHelper(this.perspectiveCamera1!);
+    this.cameraHelper = cameraHelper;
+    this.scene!.add(axesHelper, gridHelper, cameraHelper);
   },
   controls() {
     // 创建控制器
@@ -127,6 +192,7 @@ const $: $Props = {
     this.mesh!.position.y = Math.sin(elapsedTime);
     this.mesh!.position.x = Math.cos(elapsedTime);
     this.orbitControls!.update();
+    this.cameraHelper!.update();
     this.stats!.update();
     this.renderer!.render(this.scene!, this.camera!);
     requestAnimationFrame(this.animate.bind(this));
@@ -138,7 +204,10 @@ const $: $Props = {
       const height = window.innerHeight - 70;
       this.width = width;
       this.height = height;
-      this.camera!.aspect = this.width / this.height;
+
+      if (this.camera?.type === "PerspectiveCamera") {
+        this.camera!.aspect = this.width / this.height;
+      }
       this.camera!.updateProjectionMatrix();
       this.renderer!.setSize(this.width, this.height);
     };
@@ -147,6 +216,7 @@ const $: $Props = {
   init() {
     this.createScene();
     this.createCamera();
+    this.datGui();
     this.createMesh();
     this.createLight();
     this.helpers();
@@ -161,6 +231,9 @@ const $: $Props = {
 const ReactDev = () => {
   useEffect(() => {
     $.init();
+    return () => {
+      $.gui?.destroy();
+    };
   }, []);
   return (
     <>
@@ -168,7 +241,5 @@ const ReactDev = () => {
     </>
   );
 };
-
-ReactDev.displayName = "ThreeJs初识";
-
+ReactDev.displayName = "透视相机的视锥体";
 export default ReactDev;

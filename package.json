@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@arco-design/web-react": "^2.47.1",
+    "@types/dat.gui": "^0.7.10",
+    "dat.gui": "^0.7.9",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.10.0",
