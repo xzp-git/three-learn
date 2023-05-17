@@ -154,10 +154,9 @@ const $: $Props = {
     this.mesh = mesh;
   },
   createCurve() {
-    const curve = new HeartCurve()
+    const curve = new HeartCurve();
 
-    const tubeGeometry = new 
-    
+    // const tubeGeometry = new
   },
   createLight() {
     // 创建全局光源
@@ -257,5 +256,5 @@ const ReactDev = () => {
     </>
   );
 };
-ReactDev.displayName = "相机漫游";
+ReactDev.displayName = "2-6.相机漫游";
 export default ReactDev;

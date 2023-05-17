@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { DragControls } from "three/examples/jsm/controls/DragControls";
+
 import Stats from "three/examples/jsm/libs/stats.module";
 import * as dat from "dat.gui";
 
@@ -8,9 +10,10 @@ interface $Props {
   canvas?: HTMLCanvasElement;
   width?: number;
   height?: number;
-  camera?: THREE.PerspectiveCamera | THREE.OrthographicCamera;
+  camera?: THREE.PerspectiveCamera;
   orthographicCamera?: THREE.OrthographicCamera;
   perspectiveCamera?: THREE.PerspectiveCamera;
+  perspectiveCamera1?: THREE.PerspectiveCamera;
   scene?: THREE.Scene;
   mesh?: THREE.Mesh;
   renderer?: THREE.WebGLRenderer;
@@ -49,92 +52,48 @@ const $: $Props = {
     this.clock = clock;
   },
   createCamera() {
-    //创建正交相机
-    const size = 4;
-    const orthographicCamera = new THREE.OrthographicCamera(
-      -size,
-      size,
-      size / 2,
-      -size / 2,
-      0.1,
-      3
-    );
-
-    // 设置相机位置
-    orthographicCamera.position.set(2, 2, 3); // 相机默认的坐标是在(0,0,0);
-    // 设置相机方向
-    orthographicCamera.lookAt(this.scene!.position); // 将相机朝向场景
-    // 将相机添加到场景中
-    this.scene!.add(orthographicCamera);
-    this.orthographicCamera = orthographicCamera;
-
-    // 创建相机对象 第二个相机 用来观察 正交相机的视锥体
-    const perspectiveCamera = new THREE.PerspectiveCamera(
+    const perspectiveCamera1 = new THREE.PerspectiveCamera(
       75,
-      this.width! / this.height!
+      this.width! / this.height!,
+      0.1,
+      1000
     ); // 透视相机
 
     // 设置相机位置
-    perspectiveCamera.position.set(2, 2, 6); // 相机默认的坐标是在(0,0,0);
+    perspectiveCamera1.position.set(0, 2, 8); // 相机默认的坐标是在(0,0,0);
     // 设置相机方向
-    perspectiveCamera.lookAt(this.scene!.position); // 将相机朝向场景
+    perspectiveCamera1.lookAt(this.scene!.position); // 将相机朝向场景
     // 将相机添加到场景中
-    this.scene!.add(perspectiveCamera);
-    this.perspectiveCamera = perspectiveCamera;
-    this.camera = perspectiveCamera;
+    this.scene!.add(perspectiveCamera1);
+    this.perspectiveCamera1 = perspectiveCamera1;
+    this.camera = perspectiveCamera1;
   },
   datGui() {
     const gui = new dat.GUI();
-    const controls = {
-      wireframe: false,
-      switchCamera: () => {
-        if (this.camera?.type === "OrthographicCamera") {
-          this.camera = this.perspectiveCamera;
-          this.orbitControls!.enabled = true;
-        } else {
-          this.camera = this.orthographicCamera;
-          this.orbitControls!.enabled = false;
-        }
-      },
-    };
-    gui.add(this.camera!.position, "x", 0.1, 10, 0.1).name("position-x");
-    gui
-      .add(this.camera!, "near", 0.1, 3, 0.1)
-      .name("near")
-      .onChange((value) => {
-        this.camera!.near = value;
-        this.camera!.updateProjectionMatrix();
-      });
-    gui
-      .add(this.camera!, "far", 3, 100, 0.1)
-      .name("far")
-      .onChange((value) => {
-        this.camera!.far = value;
-        this.camera!.updateProjectionMatrix();
-      });
-    gui.add(controls, "wireframe").onChange((value) => {
-      (this.mesh!.material as THREE.MeshLambertMaterial).wireframe = value;
-    });
-    gui.add(controls, "switchCamera");
+    console.log(this.orbitControls);
+
+    gui.add(this.orbitControls!, "enabled"); //启用禁用 控制器
+    gui.add(this.orbitControls!, "dampingFactor", 0.01, 0.2, 0.01); //阻尼系数
+
+    gui.add(this.orbitControls!, "enablePan"); //启用/禁用相机平移
+    gui.add(this.orbitControls!, "panSpeed", 1, 10, 1); //相机平移速度
+
+    gui.add(this.orbitControls!, "autoRotate"); //相机自动旋转
+    gui.add(this.orbitControls!, "autoRotateSpeed", 1, 10, 1);
+
+    gui.add(this.orbitControls!, "enableZoom");
+    gui.add(this.orbitControls!, "zoomSpeed", 1, 10, 1);
+
     this.gui = gui;
   },
   createMesh() {
     // 创建立方体
     const geometry = new THREE.BoxGeometry(1, 1, 1);
+
     // 创建立方体的材质
     const material = new THREE.MeshLambertMaterial({
       color: 0x1890ff,
     });
-
-    // const faces = [];
-
-    // for (let index = 0; index < geometry.groups.length; index++) {
-    //   const mesh = new THREE.MeshBasicMaterial({
-    //     color: 0xffffff * Math.random(),
-    //   });
-    //   faces.push(mesh);
-    // }
-
     // 创建物体对象
     const mesh = new THREE.Mesh(geometry, material);
 
@@ -164,12 +123,8 @@ const $: $Props = {
   helpers() {
     // 创建坐标轴
     const axesHelper = new THREE.AxesHelper(3);
-    //创建辅助网格
-    const gridHelper = new THREE.GridHelper();
 
-    const cameraHelper = new THREE.CameraHelper(this.orthographicCamera!);
-    this.cameraHelper = cameraHelper;
-    this.scene!.add(axesHelper, gridHelper, cameraHelper);
+    this.scene!.add(axesHelper);
   },
   controls() {
     // 创建控制器
@@ -177,6 +132,19 @@ const $: $Props = {
     orbitControls.enableDamping = true; // 开启阻尼效果
     orbitControls.dampingFactor = 0.5; // 阻尼系数
     this.orbitControls = orbitControls;
+
+    const dragControls = new DragControls(
+      [this.mesh!],
+      this.camera!,
+      this.canvas
+    );
+
+    dragControls.addEventListener("dragstart", () => {
+      orbitControls.enabled = false;
+    });
+    dragControls.addEventListener("dragend", () => {
+      orbitControls.enabled = true;
+    });
   },
   createStats() {
     // 创建性能监控器
@@ -189,11 +157,7 @@ const $: $Props = {
     this.stats = stats;
   },
   animate() {
-    const elapsedTime = this.clock!.getElapsedTime();
-    this.mesh!.position.y = Math.sin(elapsedTime);
-    this.mesh!.position.x = Math.cos(elapsedTime);
     this.orbitControls!.update();
-    this.cameraHelper!.update();
     this.stats!.update();
     this.renderer!.render(this.scene!, this.camera!);
     requestAnimationFrame(this.animate.bind(this));
@@ -216,14 +180,15 @@ const $: $Props = {
   },
   init() {
     this.createScene();
-    this.createCamera();
-    this.datGui();
     this.createMesh();
+    this.createCamera();
+    this.controls();
     this.createLight();
     this.helpers();
-    this.controls();
     this.createRenderer();
     this.createStats();
+    this.datGui();
+
     this.animate();
     this.fitView();
   },
@@ -242,5 +207,5 @@ const ReactDev = () => {
     </>
   );
 };
-ReactDev.displayName = "2-2.正交相机的视锥体调试";
+ReactDev.displayName = "2-7.相机控制器";
 export default ReactDev;
