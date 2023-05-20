@@ -10,9 +10,8 @@ interface $Props {
   canvas?: HTMLCanvasElement;
   width?: number;
   height?: number;
-  camera?: THREE.PerspectiveCamera | THREE.OrthographicCamera;
+  camera?: THREE.PerspectiveCamera;
   orthographicCamera?: THREE.OrthographicCamera;
-  thumbnailCamera?: THREE.OrthographicCamera;
   perspectiveCamera?: THREE.PerspectiveCamera;
   perspectiveCamera1?: THREE.PerspectiveCamera;
   scene?: THREE.Scene;
@@ -35,8 +34,6 @@ interface $Props {
   animate: () => void;
   fitView: () => void;
   init: () => void;
-  clipScene: () => void;
-  clipThumbnail: () => void;
 }
 
 const $: $Props = {
@@ -55,73 +52,36 @@ const $: $Props = {
     this.clock = clock;
   },
   createCamera() {
-    //创建正交相机
-    const frusttumSize = 2; //设置相机前方显示的高度
-    const aspect = this.width! / this.height!;
-    const orthographicCamera = new THREE.OrthographicCamera(
-      -aspect * frusttumSize,
-      aspect * frusttumSize,
-      frusttumSize,
-      -frusttumSize,
+    const perspectiveCamera1 = new THREE.PerspectiveCamera(
+      75,
+      this.width! / this.height!,
       0.1,
       1000
-    );
+    ); // 透视相机
 
     // 设置相机位置
-    orthographicCamera.position.set(2, 2, 3); // 相机默认的坐标是在(0,0,0);
+    perspectiveCamera1.position.set(1, 0, 4); // 相机默认的坐标是在(0,0,0);
     // 设置相机方向
-    orthographicCamera.lookAt(this.scene!.position); // 将相机朝向场景
+    perspectiveCamera1.lookAt(this.scene!.position); // 将相机朝向场景
     // 将相机添加到场景中
-    this.scene!.add(orthographicCamera);
-    this.orthographicCamera = orthographicCamera;
-    this.camera = orthographicCamera;
-
-    //创建正交相机
-    const thumbnailCamera = new THREE.OrthographicCamera(
-      -(150 / 200) * frusttumSize,
-      (150 / 200) * frusttumSize,
-      frusttumSize,
-      -frusttumSize,
-      0.1,
-      1000
-    );
-
-    // 设置相机位置
-    thumbnailCamera.position.set(2, 2, 3); // 相机默认的坐标是在(0,0,0);
-    // 设置相机方向
-    thumbnailCamera.lookAt(this.scene!.position); // 将相机朝向场景
-    // 将相机添加到场景中
-    this.scene!.add(thumbnailCamera);
-    this.thumbnailCamera = thumbnailCamera;
+    this.scene!.add(perspectiveCamera1);
+    this.perspectiveCamera1 = perspectiveCamera1;
+    this.camera = perspectiveCamera1;
   },
   datGui() {
     const gui = new dat.GUI();
-    console.log(this.orbitControls);
 
     gui.add(this.orbitControls!, "enabled"); //启用禁用 控制器
-    gui.add(this.orbitControls!, "dampingFactor", 0.01, 0.2, 0.01); //阻尼系数
-
-    gui.add(this.orbitControls!, "enablePan"); //启用/禁用相机平移
-    gui.add(this.orbitControls!, "panSpeed", 1, 10, 1); //相机平移速度
-
-    gui.add(this.orbitControls!, "autoRotate"); //相机自动旋转
-    gui.add(this.orbitControls!, "autoRotateSpeed", 1, 10, 1);
-
-    gui.add(this.orbitControls!, "enableZoom");
-    gui.add(this.orbitControls!, "zoomSpeed", 1, 10, 1);
 
     this.gui = gui;
   },
   createMesh() {
-    // 创建立方体
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
+    const plane = new THREE.BoxGeometry(1, 1, 1);
 
-    // 创建立方体的材质
-    const material = new THREE.MeshLambertMaterial({
+    const material = new THREE.PointsMaterial({
       color: 0x1890ff,
     });
-    // 创建物体对象
-    const mesh = new THREE.Mesh(geometry, material);
+    const mesh = new THREE.Mesh(plane, material);
 
     this.scene!.add(mesh);
     this.mesh = mesh;
@@ -134,53 +94,17 @@ const $: $Props = {
     const light = new THREE.DirectionalLight(0xffffff, 0.5);
     this.scene!.add(light, ambientLight);
   },
-
   createRenderer() {
     // 创建渲染器
-    if (!this.renderer) {
-      this.renderer = new THREE.WebGLRenderer({
-        canvas: this.canvas,
-        antialias: true, // 抗锯齿
-      });
-    }
-    this.renderer.setScissorTest(true);
+    const renderer = new THREE.WebGLRenderer({
+      canvas: this.canvas,
+      antialias: true, // 抗锯齿
+    });
+    renderer.setPixelRatio(window.devicePixelRatio); // 设置像素比
 
-    this.clipScene();
-    this.clipThumbnail();
-  },
-  clipScene() {
-    const dpr = window.devicePixelRatio || 1;
-
-    // 裁剪
-
-    this.renderer!.setScissor(0, 0, this.width!, this.height!);
-    this.renderer!.setClearColor(0x999999, 0.5);
-
-    this.renderer!.setPixelRatio(dpr); // 设置像素比
     // 设置渲染器大小
-    this.renderer!.setSize(this.width!, this.height!);
-
-    this.renderer!.render(this.scene!, this.camera!);
-  },
-  clipThumbnail() {
-    const w = this.width! - 150 - 10;
-
-    this.thumbnailCamera!.position.copy(this.camera!.position);
-
-    // 更新旋转
-    this.thumbnailCamera!.rotation.copy(this.camera!.rotation);
-
-    // 更新四元数 就是更新旋转
-    this.thumbnailCamera!.quaternion.copy(this.camera!.quaternion);
-
-    this.thumbnailCamera!.zoom = this.camera!.zoom;
-
-    this.thumbnailCamera?.updateProjectionMatrix();
-
-    this.renderer!.setScissor(w, 10, 150, 200);
-    this.renderer!.setViewport(w, 10, 150, 200);
-    this.renderer!.setClearColor(0x000000);
-    this.renderer!.render(this.scene!, this.thumbnailCamera!);
+    renderer.setSize(this.width!, this.height!);
+    this.renderer = renderer;
   },
   helpers() {
     // 创建坐标轴
@@ -221,7 +145,7 @@ const $: $Props = {
   animate() {
     this.orbitControls!.update();
     this.stats!.update();
-    this.createRenderer();
+    this.renderer!.render(this.scene!, this.camera!);
     requestAnimationFrame(this.animate.bind(this));
   },
   fitView() {
@@ -269,5 +193,5 @@ const ReactDev = () => {
     </>
   );
 };
-ReactDev.displayName = "2-8.多相机同步渲染";
+ReactDev.displayName = "3-2.几何体属性与动画库";
 export default ReactDev;
