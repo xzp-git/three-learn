@@ -212,6 +212,6 @@ const ReactDev = () => {
     </>
   );
 };
-ReactDev.displayName = "透视相机的角度";
+ReactDev.displayName = "2-3.透视相机的角度";
 
 export default ReactDev;
