@@ -22,9 +22,14 @@ interface $Props {
   clock?: THREE.Clock;
   cameraHelper?: THREE.CameraHelper;
   gui?: dat.GUI;
+  curve?: HeartCurve;
+  points?: THREE.Vector3[];
+  count: number;
+  sphereMesh?: THREE.Mesh;
   createCurve: () => void;
   createScene: () => void;
   createCamera: () => void;
+  moveCamera: () => void;
   datGui: () => void;
   createMesh: () => void;
   createLight: () => void;
@@ -56,11 +61,13 @@ const $: $Props = {
     // 创建相机对象 第二个相机 用来观察 正交相机的视锥体
     const perspectiveCamera1 = new THREE.PerspectiveCamera(
       75,
-      this.width! / this.height!
+      this.width! / this.height!,
+      0.1,
+      100
     ); // 透视相机
 
     // 设置相机位置
-    perspectiveCamera1.position.set(2, 2, 3); // 相机默认的坐标是在(0,0,0);
+    perspectiveCamera1.position.set(0, 0, 20); // 相机默认的坐标是在(0,0,0);
     // 设置相机方向
     perspectiveCamera1.lookAt(this.scene!.position); // 将相机朝向场景
     // 将相机添加到场景中
@@ -70,11 +77,13 @@ const $: $Props = {
     // 创建相机对象 第二个相机 用来观察 正交相机的视锥体
     const perspectiveCamera = new THREE.PerspectiveCamera(
       75,
-      this.width! / this.height!
+      this.width! / this.height!,
+      0.1,
+      100
     ); // 透视相机
 
     // 设置相机位置
-    perspectiveCamera.position.set(2, 2, 6); // 相机默认的坐标是在(0,0,0);
+    perspectiveCamera.position.set(2, 2, 20); // 相机默认的坐标是在(0,0,0);
     // 设置相机方向
     perspectiveCamera.lookAt(this.scene!.position); // 将相机朝向场景
     // 将相机添加到场景中
@@ -82,18 +91,29 @@ const $: $Props = {
     this.perspectiveCamera = perspectiveCamera;
     this.camera = perspectiveCamera;
   },
+  count: 0,
+  moveCamera() {
+    const index = this.count % this.points!.length;
+    const point = this.points![index];
+
+    this.perspectiveCamera1?.position.set(point.x, 0, -point.y);
+    this.perspectiveCamera1?.lookAt(point.x, 0, -point.y);
+    this.sphereMesh?.position.set(point.x, 0, -point.y);
+    this.count++;
+  },
+
   datGui() {
     const gui = new dat.GUI();
     const controls = {
       wireframe: false,
       switchCamera: () => {
+        this.orbitControls?.dispose();
         if (this.camera === this.perspectiveCamera1) {
           this.camera = this.perspectiveCamera;
-          this.orbitControls!.enabled = true;
         } else {
           this.camera = this.perspectiveCamera1;
-          this.orbitControls!.enabled = false;
         }
+        this.orbitControls = new OrbitControls(this.camera!, this.canvas!);
       },
     };
     gui
@@ -154,10 +174,28 @@ const $: $Props = {
     this.mesh = mesh;
   },
   createCurve() {
-    const curve = new HeartCurve()
+    const curve = new HeartCurve(1);
 
-    const tubeGeometry = new 
-    
+    this.points = curve.getPoints(3000);
+
+    const tubeGeometry = new THREE.TubeGeometry(curve, 100, 0.01, 8, true);
+
+    const material = new THREE.MeshBasicMaterial({
+      color: 0x00ff00,
+    });
+    const tubMesh = new THREE.Mesh(tubeGeometry, material);
+    tubMesh.rotation.x = -Math.PI / 2;
+    this.scene!.add(tubMesh);
+    this.curve = curve;
+
+    const sphereGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+    const sphereMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffff00,
+    });
+    const sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
+
+    this.scene!.add(sphereMesh);
+    this.sphereMesh = sphereMesh;
   },
   createLight() {
     // 创建全局光源
@@ -205,10 +243,8 @@ const $: $Props = {
     this.stats = stats;
   },
   animate() {
-    const elapsedTime = this.clock!.getElapsedTime();
-    this.mesh!.position.y = Math.sin(elapsedTime);
-    this.mesh!.position.x = Math.cos(elapsedTime);
     this.orbitControls!.update();
+    this.moveCamera();
     this.stats!.update();
     this.renderer!.render(this.scene!, this.camera!);
     requestAnimationFrame(this.animate.bind(this));
@@ -232,6 +268,7 @@ const $: $Props = {
   init() {
     this.createScene();
     this.createMesh();
+    this.createCurve();
     this.createCamera();
     this.datGui();
     this.createLight();
