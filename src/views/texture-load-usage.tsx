@@ -6,6 +6,7 @@ import { mergeBufferGeometries } from "three/examples/jsm/utils/BufferGeometryUt
 
 import Stats from "three/examples/jsm/libs/stats.module";
 import * as dat from "dat.gui";
+import { BoxGeometry } from "three";
 
 interface $Props {
   canvas?: HTMLCanvasElement;
@@ -24,6 +25,7 @@ interface $Props {
   cameraHelper?: THREE.CameraHelper;
   gui?: dat.GUI;
   carGroup?: THREE.Group;
+  texture?: THREE.Texture;
   createScene: () => void;
   createCamera: () => void;
   datGui: () => void;
@@ -36,7 +38,7 @@ interface $Props {
   animate: () => void;
   fitView: () => void;
   init: () => void;
-  runCar: () => void;
+  loadTextures: () => void;
 }
 
 const $: $Props = {
@@ -63,7 +65,7 @@ const $: $Props = {
     ); // 透视相机
 
     // 设置相机位置
-    perspectiveCamera1.position.set(2, 2, 4); // 相机默认的坐标是在(0,0,0);
+    perspectiveCamera1.position.set(4, 4, 6); // 相机默认的坐标是在(0,0,0);
     // 设置相机方向
     perspectiveCamera1.lookAt(this.scene!.position); // 将相机朝向场景
     // 将相机添加到场景中
@@ -79,75 +81,133 @@ const $: $Props = {
     this.gui = gui;
   },
   createMesh() {
-    const carGeometry = new THREE.BoxGeometry(2, 0.2, 1);
+    const geometry = new THREE.CylinderGeometry(2, 2, 2);
 
     const material = new THREE.MeshLambertMaterial({
-      color: 0x1890ff,
+      map: this.texture,
     });
 
-    const mesh = new THREE.Mesh(carGeometry, material);
-    mesh.position.y = 0.1;
+    const mesh = new THREE.Mesh(geometry, material);
 
-    //车轮
-    const wheelGeometry = new THREE.CylinderGeometry(0.2, 0.2, 0.3, 32);
-    const wheelMaterial = new THREE.MeshBasicMaterial({
-      color: 0xff00ff,
-    });
-    const wheelMesh1 = new THREE.Mesh(wheelGeometry, wheelMaterial);
-    wheelMesh1.rotation.x = -Math.PI / 2;
-    wheelMesh1.position.set(-0.5, 0, 0.4);
-    const wheelMesh2 = new THREE.Mesh(wheelGeometry, wheelMaterial);
-    wheelMesh2.rotation.x = -Math.PI / 2;
-    wheelMesh2.position.set(-0.5, 0, -0.4);
-    const wheelMesh3 = new THREE.Mesh(wheelGeometry, wheelMaterial);
-    wheelMesh3.rotation.x = -Math.PI / 2;
-    wheelMesh3.position.set(0.5, 0, -0.4);
-    const wheelMesh4 = new THREE.Mesh(wheelGeometry, wheelMaterial);
-    wheelMesh4.rotation.x = -Math.PI / 2;
-    wheelMesh4.position.set(0.5, 0, 0.4);
-
-    wheelMesh1.name = "wheel";
-    wheelMesh2.name = "wheel";
-    wheelMesh3.name = "wheel";
-    wheelMesh4.name = "wheel";
-
-    const lightGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-    const lightMaterial = new THREE.MeshBasicMaterial({
-      color: 0xffff00,
+    const boxGeometry = new BoxGeometry(2, 2, 2);
+    const boxMaterial = new THREE.MeshLambertMaterial({
+      map: this.texture,
     });
 
-    const light1 = new THREE.Mesh(lightGeometry, lightMaterial);
-    light1.position.set(-1.05, 0.1, 0.25);
-    const light2 = new THREE.Mesh(lightGeometry, lightMaterial);
-    light2.position.set(-1.05, 0.1, -0.25);
-
-    // 使用group的好处是可以一起移动, group是把多个 mesh 放在一起
-    const carGroup = new THREE.Group();
-    carGroup.add(
-      mesh,
-      wheelMesh1,
-      wheelMesh2,
-      wheelMesh3,
-      wheelMesh4,
-      light1,
-      light2
-    );
-    carGroup.position.y = 0.2;
-
-    this.carGroup = carGroup;
-
-    // 合并几何体 是把多个几何体合并成一个几何体 和 group 不一样, group 是把多个 mesh 放在一起
-    const mergeGeometry = mergeBufferGeometries([
-      carGeometry,
-      wheelGeometry,
-      lightGeometry,
-    ]);
-    const mesh1 = new THREE.Mesh(mergeGeometry, material);
-
-    mesh1.position.y = -1;
-
-    this.scene!.add(carGroup, mesh1);
+    const box = new THREE.Mesh(boxGeometry, boxMaterial);
+    box.position.x = 3.5;
+    this.scene!.add(mesh, box);
     this.mesh = mesh;
+  },
+
+  // 方法1 Texture
+  // loadTextures() {
+  //   const img = new Image();
+  //   const texture = new THREE.Texture(img);
+  //   img.src =
+  //     "/src/assets/textures/textures/Wood_Ceiling_Coffers_003/Wood_Ceiling_Coffers_003_basecolor.jpg";
+
+  //   img.onload = function () {
+  //     texture.needsUpdate = true;
+  //   };
+  //   this.texture = texture;
+  // },
+
+  // 方法2 TextureLoader
+  // loadTextures() {
+  //   // 初始化一个加载器
+
+  //   const loader = new THREE.TextureLoader();
+
+  //   // 加载一个资源
+  //   this.texture = loader.setCrossOrigin("anonymous").load(
+  //     // 资源URL
+  //     "/src/assets/textures/textures/Wood_Ceiling_Coffers_003/Wood_Ceiling_Coffers_003_basecolor.jpg",
+  //     // onLoad回调
+  //     function (texture) {
+  //       // in this example we create the material when the texture is loaded
+  //     },
+
+  //     // 目前暂不支持onProgress的回调
+  //     undefined,
+  //     // onError回调
+  //     function (err) {
+  //       console.error("An error happened.");
+  //     }
+  //   );
+  // },
+
+  // 方法3 LoadingManager 一般来说，默认的加载管理器已足够使用了，但有时候也需要设置单独的加载器 - 例如，如果你想为对象和纹理显示单独的加载条。
+  loadTextures() {
+    const manager = new THREE.LoadingManager();
+    manager.onStart = function (url, itemsLoaded, itemsTotal) {
+      console.log(
+        "Started loading file: " +
+          url +
+          ".\nLoaded " +
+          itemsLoaded +
+          " of " +
+          itemsTotal +
+          " files."
+      );
+    };
+
+    manager.onLoad = function () {
+      console.log("Loading complete!");
+    };
+
+    manager.onProgress = function (url, itemsLoaded, itemsTotal) {
+      console.log(
+        "Loading file: " +
+          url +
+          ".\nLoaded " +
+          itemsLoaded +
+          " of " +
+          itemsTotal +
+          " files."
+      );
+    };
+
+    manager.onError = function (url) {
+      console.log("There was an error loading " + url);
+    };
+
+    // 初始化一个加载器
+
+    const loader = new THREE.TextureLoader(manager);
+
+    loader.setCrossOrigin("anonymous").load(
+      // 资源URL
+      "/src/assets/textures/textures/Wood_Ceiling_Coffers_003/Wood_Ceiling_Coffers_003_height.png",
+      // onLoad回调
+      function (texture) {
+        // in this example we create the material when the texture is loaded
+      },
+
+      // 目前暂不支持onProgress的回调
+      undefined,
+      // onError回调
+      function (err) {
+        console.error("An error happened.");
+      }
+    );
+
+    // 加载一个资源
+    this.texture = loader.setCrossOrigin("anonymous").load(
+      // 资源URL
+      "/src/assets/textures/textures/Wood_Ceiling_Coffers_003/Wood_Ceiling_Coffers_003_basecolor.jpg",
+      // onLoad回调
+      function (texture) {
+        // in this example we create the material when the texture is loaded
+      },
+
+      // 目前暂不支持onProgress的回调
+      undefined,
+      // onError回调
+      function (err) {
+        console.error("An error happened.");
+      }
+    );
   },
   createLight() {
     // 创建全局光源
@@ -206,29 +266,10 @@ const $: $Props = {
     document.body.appendChild(stats.dom);
     this.stats = stats;
   },
-  runCar() {
-    const { children } = this.carGroup!;
 
-    const detal = 4; // 一秒走多少度
-
-    const speed = ((2 * Math.PI * 0.2) / 360) * detal; // 一度 对应的周长 是多少
-
-    for (const i in children) {
-      const mesh = children[i];
-      if (mesh.name === "wheel") {
-        mesh.rotation.y += THREE.MathUtils.radToDeg(detal);
-      }
-    }
-
-    this.carGroup!.position.x -= speed;
-    if (this.carGroup!.position.x < -10) {
-      this.carGroup!.position.x = 10;
-    }
-  },
   animate() {
     this.orbitControls!.update();
     this.stats!.update();
-    this.runCar();
     this.renderer!.render(this.scene!, this.camera!);
     requestAnimationFrame(this.animate.bind(this));
   },
@@ -250,6 +291,7 @@ const $: $Props = {
   },
   init() {
     this.createScene();
+    this.loadTextures();
     this.createMesh();
     this.createCamera();
     this.controls();
@@ -277,5 +319,5 @@ const ReactDev = () => {
     </>
   );
 };
-ReactDev.displayName = "3-3.造个小车";
+ReactDev.displayName = "4-2.应用纹理";
 export default ReactDev;
