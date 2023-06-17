@@ -311,5 +311,5 @@ const ReactDev = () => {
     </>
   );
 };
-ReactDev.displayName = "4-2.应用纹理";
+ReactDev.displayName = "4-1.加载纹理";
 export default ReactDev;
