@@ -26,6 +26,7 @@ interface $Props {
   gui?: dat.GUI;
   carGroup?: THREE.Group;
   texture?: THREE.Texture;
+  textureLoader?: THREE.TextureLoader;
   createScene: () => void;
   createCamera: () => void;
   datGui: () => void;
@@ -175,22 +176,7 @@ const $: $Props = {
     // 初始化一个加载器
 
     const loader = new THREE.TextureLoader(manager);
-
-    loader.setCrossOrigin("anonymous").load(
-      // 资源URL
-      "/src/assets/textures/textures/Wood_Ceiling_Coffers_003/Wood_Ceiling_Coffers_003_height.png",
-      // onLoad回调
-      function (texture) {
-        // in this example we create the material when the texture is loaded
-      },
-
-      // 目前暂不支持onProgress的回调
-      undefined,
-      // onError回调
-      function (err) {
-        console.error("An error happened.");
-      }
-    );
+    this.textureLoader = loader;
 
     // 加载一个资源
     this.texture = loader.setCrossOrigin("anonymous").load(
