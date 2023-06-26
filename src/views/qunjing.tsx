@@ -7,6 +7,7 @@ import { mergeBufferGeometries } from "three/examples/jsm/utils/BufferGeometryUt
 import Stats from "three/examples/jsm/libs/stats.module";
 import * as dat from "dat.gui";
 import { BoxGeometry } from "three";
+import { log } from "console";
 
 interface $Props {
   canvas?: HTMLCanvasElement;
@@ -26,7 +27,18 @@ interface $Props {
   gui?: dat.GUI;
   carGroup?: THREE.Group;
   texture?: THREE.Texture;
+  aoMap?: THREE.Texture;
+  normalMap?: THREE.Texture;
+  matcap1?: THREE.Texture;
+  matcap2?: THREE.Texture;
+  matcap3?: THREE.Texture;
+  threeToOne?: THREE.Texture;
+  fiveToOne?: THREE.Texture;
   textureLoader?: THREE.TextureLoader;
+  roughnessTexture?: THREE.Texture;
+  envTexture?: THREE.CubeTexture;
+  material?: THREE.MeshToonMaterial;
+  physicalMaterial?: THREE.MeshPhysicalMaterial;
   createScene: () => void;
   createCamera: () => void;
   datGui: () => void;
@@ -66,7 +78,7 @@ const $: $Props = {
     ); // 透视相机
 
     // 设置相机位置
-    perspectiveCamera1.position.set(4, 4, 6); // 相机默认的坐标是在(0,0,0);
+    perspectiveCamera1.position.set(0.5, 2, 6); // 相机默认的坐标是在(0,0,0);
     // 设置相机方向
     perspectiveCamera1.lookAt(this.scene!.position); // 将相机朝向场景
     // 将相机添加到场景中
@@ -79,66 +91,50 @@ const $: $Props = {
 
     gui.add(this.orbitControls!, "enabled"); //启用禁用 控制器
 
+    gui.add(this.physicalMaterial!, "envMapIntensity", 0, 1, 0.1);
+    gui.add(this.physicalMaterial!, "metalness", 0, 1, 0.1);
+    gui.add(this.physicalMaterial!, "roughness", 0, 1, 0.1);
+    gui.add(this.physicalMaterial!, "clearcoat", 0, 1, 0.1);
+    gui.add(this.physicalMaterial!, "transmission", 0, 1, 0.1);
+    gui.add(this.physicalMaterial!, "ior", 1, 2.33, 0.01);
+    gui.add(this.physicalMaterial!, "thickness", 0, 1, 0.1);
+
     this.gui = gui;
   },
   createMesh() {
-    const geometry = new THREE.CylinderGeometry(2, 2, 2);
+    const geometry = new THREE.SphereGeometry(1, 64, 16);
 
-    const material = new THREE.MeshLambertMaterial({
+    const material = new THREE.MeshStandardMaterial({
       map: this.texture,
     });
+
+    // this.material = material;
 
     const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.x = -1.5;
+    mesh.position.y = 1.5;
 
-    const boxGeometry = new BoxGeometry(2, 2, 2);
-    const boxMaterial = new THREE.MeshLambertMaterial({
-      map: this.texture,
+    const boxGeometry = new THREE.SphereGeometry(1, 64, 16);
+    const boxMaterial = new THREE.MeshPhysicalMaterial({
+      //   map: this.texture!,
+      envMap: this.envTexture!,
+      envMapIntensity: 1, //通过乘以环境贴图的颜色来缩放环境贴图的效果。
+      roughnessMap: this.roughnessTexture!,
+      roughness: 0.1,
+      clearcoat: 0.1, //表示clear coat层的强度，范围从0.0到1.0m，当需要在表面加一层薄薄的半透明材质的时候，可以使用与clear coat相关的属性，默认为0.0;
+      transmission: 0.8, //透光率（或者说透光性），范围从0.0到1.0。默认值是0.0。
+      ior: 1.0, //s为非金属材质所设置的折射率，范围由1.0到2.333。默认为1.5。
+      thickness: 1.0,
     });
 
+    this.physicalMaterial = boxMaterial;
     const box = new THREE.Mesh(boxGeometry, boxMaterial);
-    box.position.x = 3.5;
+    box.position.x = 1.5;
+    box.position.y = 1.5;
+
     this.scene!.add(mesh, box);
     this.mesh = mesh;
   },
-
-  // 方法1 Texture
-  // loadTextures() {
-  //   const img = new Image();
-  //   const texture = new THREE.Texture(img);
-  //   img.src =
-  //     "/src/assets/textures/textures/Wood_Ceiling_Coffers_003/Wood_Ceiling_Coffers_003_basecolor.jpg";
-
-  //   img.onload = function () {
-  //     texture.needsUpdate = true;
-  //   };
-  //   this.texture = texture;
-  // },
-
-  // 方法2 TextureLoader
-  // loadTextures() {
-  //   // 初始化一个加载器
-
-  //   const loader = new THREE.TextureLoader();
-
-  //   // 加载一个资源
-  //   this.texture = loader.setCrossOrigin("anonymous").load(
-  //     // 资源URL
-  //     "/src/assets/textures/textures/Wood_Ceiling_Coffers_003/Wood_Ceiling_Coffers_003_basecolor.jpg",
-  //     // onLoad回调
-  //     function (texture) {
-  //       // in this example we create the material when the texture is loaded
-  //     },
-
-  //     // 目前暂不支持onProgress的回调
-  //     undefined,
-  //     // onError回调
-  //     function (err) {
-  //       console.error("An error happened.");
-  //     }
-  //   );
-  // },
-
-  // 方法3 LoadingManager 一般来说，默认的加载管理器已足够使用了，但有时候也需要设置单独的加载器 - 例如，如果你想为对象和纹理显示单独的加载条。
   loadTextures() {
     const manager = new THREE.LoadingManager();
     manager.onStart = function (url, itemsLoaded, itemsTotal) {
@@ -175,13 +171,15 @@ const $: $Props = {
 
     // 初始化一个加载器
 
+    const cubeTextureLoader = new THREE.CubeTextureLoader(manager);
+
     const loader = new THREE.TextureLoader(manager);
     this.textureLoader = loader;
 
-    // 加载一个资源
+    // 加载一个资源 颜色贴图
     this.texture = loader.setCrossOrigin("anonymous").load(
       // 资源URL
-      "/src/assets/textures/textures/Wood_Ceiling_Coffers_003/Wood_Ceiling_Coffers_003_basecolor.jpg",
+      "/src/assets/textures/textures/Warning_Sign_HighVoltage_001/Warning_Sign_HighVoltage_001_basecolor.jpg",
       // onLoad回调
       function (texture) {
         // in this example we create the material when the texture is loaded
@@ -194,6 +192,54 @@ const $: $Props = {
         console.error("An error happened.");
       }
     );
+
+    // ao贴图 环境遮挡贴图
+    this.aoMap = loader.setCrossOrigin("anonymous").load(
+      // 资源URL
+      "/src/assets/textures/textures/Wood_Ceiling_Coffers_003/Wood_Ceiling_Coffers_003_ambientOcclusion.jpg"
+    );
+
+    // 法线贴图
+    this.normalMap = loader.setCrossOrigin("anonymous").load(
+      // 资源URL
+      "/src/assets/textures/textures/Wood_Ceiling_Coffers_003/Wood_Ceiling_Coffers_003_normal.jpg"
+    );
+    this.matcap1 = loader.setCrossOrigin("anonymous").load(
+      // 资源URL
+      "/src/assets/textures/textures/matcaps/6D3B1C_844C31-256px.png"
+    );
+    this.matcap2 = loader.setCrossOrigin("anonymous").load(
+      // 资源URL
+      "/src/assets/textures/textures/matcaps/54584E_A7ACA3-256px.png"
+    );
+    this.matcap3 = loader.setCrossOrigin("anonymous").load(
+      // 资源URL
+      "/src/assets/textures/textures/matcaps/BA472D_CA6E67-256px.png"
+    );
+
+    this.threeToOne = loader.setCrossOrigin("anonymous").load(
+      // 资源URL
+      "/src/assets/textures/textures/threeTone.jpg"
+    );
+
+    this.fiveToOne = loader.setCrossOrigin("anonymous").load(
+      // 资源URL
+      "/src/assets/textures/textures/fiveTone.jpg"
+    );
+
+    this.roughnessTexture = loader.setCrossOrigin("anonymous").load(
+      // 资源URL
+      "/src/assets/textures/textures/Warning_Sign_HighVoltage_001/Warning_Sign_HighVoltage_001_roughness.jpg"
+    );
+
+    this.envTexture = cubeTextureLoader.load([
+      "/src/assets/textures/textures/fullscreen/1.left.jpg",
+      "/src/assets/textures/textures/fullscreen/1.right.jpg",
+      "/src/assets/textures/textures/fullscreen/1.top.jpg",
+      "/src/assets/textures/textures/fullscreen/1.bottom.jpg",
+      "/src/assets/textures/textures/fullscreen/1.front.jpg",
+      "/src/assets/textures/textures/fullscreen/1.back.jpg",
+    ]);
   },
   createLight() {
     // 创建全局光源
@@ -305,5 +351,5 @@ const ReactDev = () => {
     </>
   );
 };
-ReactDev.displayName = "4-2.应用纹理";
+ReactDev.displayName = "5-3. 360度全景贴图";
 export default ReactDev;

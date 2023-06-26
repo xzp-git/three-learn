@@ -250,8 +250,8 @@ const $: $Props = {
   },
   createStats() {
     // 创建性能监控器
-    const stats = Stats();
-    stats.setMode(0);
+    const stats = new Stats();
+    stats.showPanel(0);
     stats.dom.style.position = "absolute";
     stats.dom.style.left = "200px";
     stats.dom.style.top = "70px";
