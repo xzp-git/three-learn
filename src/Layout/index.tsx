@@ -2,6 +2,9 @@ import { Layout as ALayout, Menu, Space } from "@arco-design/web-react";
 import { Route, Routes, useNavigate } from "react-router-dom";
 import threeIco from "@/assets/three_white.ico";
 import routes from "@/route/route";
+
+import style from "./index.module.less";
+
 const MenuItem = Menu.Item;
 const SubMenu = Menu.SubMenu;
 const Sider = ALayout.Sider;
@@ -30,7 +33,10 @@ const Layout = () => {
         </Space>
       </Header>
       <ALayout>
-        <Sider style={{ backgroundColor: "#232324" }}>
+        <Sider
+          className={style["custom-aside"]}
+          style={{ backgroundColor: "#232324" }}
+        >
           <Menu
             onClickMenuItem={onMenuClick}
             style={{ width: 200, borderRadius: 4 }}

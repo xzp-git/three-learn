@@ -34,12 +34,9 @@ interface $Props {
   fiveToOne?: THREE.Texture;
   textureLoader?: THREE.TextureLoader;
   roughnessTexture?: THREE.Texture;
-  metalnessMap?: THREE.Texture;
   envTexture?: THREE.CubeTexture;
   material?: THREE.MeshToonMaterial;
   physicalMaterial?: THREE.MeshPhysicalMaterial;
-  hdrMap1?: THREE.DataTexture;
-  hdrMap2?: THREE.DataTexture;
   createScene: () => void;
   createCamera: () => void;
   datGui: () => void;
@@ -100,69 +97,13 @@ const $: $Props = {
     gui.add(this.physicalMaterial!, "ior", 1, 2.33, 0.01);
     gui.add(this.physicalMaterial!, "thickness", 0, 1, 0.1);
 
-    const sceneFolder = gui.addFolder("场景");
-
-    sceneFolder.add(this.scene!, "backgroundBlurriness", 0, 1, 0.1); //背景模糊
-    sceneFolder.add(this.scene!, "backgroundIntensity", 0, 1, 0.1); //背景亮度
-
-    gui.add({ exposure: 1 }, "exposure", 0, 10, 0.1).onChange((val) => {
-      this.renderer!.toneMappingExposure = val;
-    });
-    gui
-      .add(this.renderer!, "toneMapping", [
-        "NoToneMapping",
-        "LinearToneMapping",
-        "ReinhardToneMapping",
-        "CineonToneMapping",
-        "ACESFilmicToneMapping",
-      ])
-      .onChange((val) => {
-        //@ts-ignore
-        this.renderer!.toneMapping = THREE[val];
-      });
-    gui
-      .add(this.renderer!, "outputColorSpace", [
-        "NoColorSpace",
-        "SRGBColorSpace",
-        "LinearSRGBColorSpace",
-      ])
-      .onChange((val) => {
-        //@ts-ignore
-        this.renderer!.outputColorSpace = THREE[val];
-      });
-
     this.gui = gui;
   },
   createMesh() {
-    const geometry1 = new THREE.SphereGeometry(1, 64, 16);
-
-    const material1 = new THREE.MeshStandardMaterial({
-      map: this.texture,
-      //   envMap: this.hdrMap2!,
-      metalnessMap: this.metalnessMap,
-      metalness: 1,
-      envMapIntensity: 1, //通过乘以环境贴图的颜色来缩放环境贴图的效果。
-      roughness: 0,
-    });
-
-    // this.material = material;
-
-    const mesh1 = new THREE.Mesh(geometry1, material1);
-    mesh1.position.x = 4.5;
-    mesh1.position.y = 1.5;
-
     const geometry = new THREE.SphereGeometry(1, 64, 16);
 
-    const material = new THREE.MeshPhysicalMaterial({
-      envMap: this.hdrMap2!,
-      metalness: 0,
-      envMapIntensity: 1, //通过乘以环境贴图的颜色来缩放环境贴图的效果。
-      roughnessMap: this.roughnessTexture!,
-      roughness: 0.1,
-      clearcoat: 1, //表示clear coat层的强度，范围从0.0到1.0m，当需要在表面加一层薄薄的半透明材质的时候，可以使用与clear coat相关的属性，默认为0.0;
-      transmission: 1, //透光率（或者说透光性），范围从0.0到1.0。默认值是0.0。
-      ior: 1.2, //s为非金属材质所设置的折射率，范围由1.0到2.333。默认为1.5。
-      thickness: 1,
+    const material = new THREE.MeshStandardMaterial({
+      map: this.texture,
     });
 
     // this.material = material;
@@ -174,15 +115,14 @@ const $: $Props = {
     const boxGeometry = new THREE.SphereGeometry(1, 64, 16);
     const boxMaterial = new THREE.MeshPhysicalMaterial({
       //   map: this.texture!,
-      //   envMap: this.hdrMap1!,
-      metalness: 1,
+      envMap: this.envTexture!,
       envMapIntensity: 1, //通过乘以环境贴图的颜色来缩放环境贴图的效果。
       roughnessMap: this.roughnessTexture!,
       roughness: 0.1,
       clearcoat: 0.1, //表示clear coat层的强度，范围从0.0到1.0m，当需要在表面加一层薄薄的半透明材质的时候，可以使用与clear coat相关的属性，默认为0.0;
-      transmission: 1, //透光率（或者说透光性），范围从0.0到1.0。默认值是0.0。
-      ior: 1.2, //s为非金属材质所设置的折射率，范围由1.0到2.333。默认为1.5。
-      thickness: 1,
+      transmission: 0.8, //透光率（或者说透光性），范围从0.0到1.0。默认值是0.0。
+      ior: 1.0, //s为非金属材质所设置的折射率，范围由1.0到2.333。默认为1.5。
+      thickness: 1.0,
     });
 
     this.physicalMaterial = boxMaterial;
@@ -190,7 +130,7 @@ const $: $Props = {
     box.position.x = 1.5;
     box.position.y = 1.5;
 
-    this.scene!.add(mesh, box, mesh1);
+    this.scene!.add(mesh, box);
     this.mesh = mesh;
   },
   loadTextures() {
@@ -232,48 +172,12 @@ const $: $Props = {
     const cubeTextureLoader = new THREE.CubeTextureLoader(manager);
 
     const loader = new THREE.TextureLoader(manager);
-
-    const rgbELoader = new RGBELoader(manager);
-
-    this.hdrMap1 = rgbELoader.load(
-      "/src/assets/textures/textures/rectangular/san_giuseppe_bridge_2k.hdr",
-      (dataTexture) => {
-        dataTexture.mapping = THREE.EquirectangularReflectionMapping; //反射映射
-        this.scene!.background = dataTexture;
-        this.scene!.environment = dataTexture;
-      }
-    );
-
-    this.hdrMap2 = rgbELoader.load(
-      "/src/assets/textures/textures/rectangular/san_giuseppe_bridge_2k.hdr",
-      (dataTexture) => {
-        dataTexture.mapping = THREE.EquirectangularRefractionMapping; //折射映射
-        // this.scene!.background = dataTexture;
-      }
-    );
-
     this.textureLoader = loader;
 
     // 加载一个资源 颜色贴图
     this.texture = loader.setCrossOrigin("anonymous").load(
       // 资源URL
       "/src/assets/textures/textures/Warning_Sign_HighVoltage_001/Warning_Sign_HighVoltage_001_basecolor.jpg",
-      // onLoad回调
-      function (texture) {
-        // in this example we create the material when the texture is loaded
-      },
-
-      // 目前暂不支持onProgress的回调
-      undefined,
-      // onError回调
-      function (err) {
-        console.error("An error happened.");
-      }
-    );
-
-    this.metalnessMap = loader.setCrossOrigin("anonymous").load(
-      // 资源URL
-      "/src/assets/textures/textures/Warning_Sign_HighVoltage_001/Warning_Sign_HighVoltage_001_metallic.jpg",
       // onLoad回调
       function (texture) {
         // in this example we create the material when the texture is loaded
@@ -447,5 +351,5 @@ const ReactDev = () => {
     </>
   );
 };
-ReactDev.displayName = "5-4. 360度全景贴图";
+ReactDev.displayName = "5-3. 物理网格材质";
 export default ReactDev;

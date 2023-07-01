@@ -13,7 +13,7 @@ specifiers:
   react: ^18.2.0
   react-dom: ^18.2.0
   react-router-dom: ^6.10.0
-  three: ^0.151.0
+  three: ^0.153.0
   typescript: ^4.6.4
   vite: ^3.2.3
 
@@ -24,7 +24,7 @@ dependencies:
   react: 18.2.0
   react-dom: 18.2.0_react@18.2.0
   react-router-dom: 6.11.1_biqbaboplfbrettd7655fr4n2y
-  three: 0.151.3
+  three: 0.153.0
 
 devDependencies:
   '@types/node': 18.16.9
@@ -1264,8 +1264,8 @@ packages:
     engines: {node: '>= 0.4'}
     dev: true
 
-  /three/0.151.3:
-    resolution: {integrity: sha512-+vbuqxFy8kzLeO5MgpBHUvP/EAiecaDwDuOPPDe6SbrZr96kccF0ktLngXc7xA7bzyd3N0t2f6mw3Z9y6JCojQ==}
+  /three/0.153.0:
+    resolution: {integrity: sha512-OCP2/uQR6GcDpSLnJt/3a4mdS0kNWcbfUXIwLoEMgLzEUIVIYsSDwskpmOii/AkDM+BBwrl6+CKgrjX9+E2aWg==}
     dev: false
 
   /to-fast-properties/2.0.0:
